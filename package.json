@@ -1,0 +1,22 @@
+{
+  "name": "eslint-plugin-aero",
+  "version": "1.0.0",
+  "description": "eslint rule for spaces in parens, brackets and braces",
+  "main": "index.js",
+  "scripts": {
+    "test": "node test.js"
+  },
+  "keywords": [
+    "eslint",
+    "space",
+    "parens"
+  ],
+  "author": "Enzuo",
+  "license": "MIT",
+  "devDependencies": {
+    "eslint": "^3.8.1"
+  },
+  "peerDependencies": {
+    "eslint": ">=0.8.0"
+  }
+}

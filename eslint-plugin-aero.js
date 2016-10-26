@@ -4,8 +4,6 @@
  */
 "use strict";
 
-const astUtils = require("../ast-utils");
-
 //------------------------------------------------------------------------------
 // Rule Definition
 //------------------------------------------------------------------------------
@@ -99,6 +97,13 @@ module.exports = {
         const sourceCode = context.getSourceCode();
 
         /**
+         * eslint astUtils isTokenOnSameLine
+         */
+        function isTokenOnSameLine(left, right) {
+            return left.loc.end.line === right.loc.start.line;
+        }
+
+        /**
          * Determines if a token is one of the exceptions for the opener paren
          * @param {Object} token The token to check
          * @returns {boolean} True if the token is one of the exceptions for the opener paren
@@ -122,8 +127,12 @@ module.exports = {
          * @param {Object} right The token after it
          * @returns {boolean} True if the paren should have a space
          */
-        function shouldOpenerHaveSpace(left, right) {
-            if (sourceCode.isSpaceBetweenTokens(left, right)) {
+        function shouldOpenerHaveSpace(token, left, right) {
+            if (sourceCode.isSpaceBetweenTokens(token, right)) {
+                return false;
+            }
+
+            if (sourceCode.isSpaceBetweenTokens(left, token)) {
                 return false;
             }
 
@@ -170,7 +179,7 @@ module.exports = {
                 return false;
             }
 
-            if (!astUtils.isTokenOnSameLine(left, right)) {
+            if (!isTokenOnSameLine(left, right)) {
                 return false;
             }
 
@@ -196,7 +205,7 @@ module.exports = {
                 return false;
             }
 
-            if (!astUtils.isTokenOnSameLine(left, right)) {
+            if (!isTokenOnSameLine(left, right)) {
                 return false;
             }
 
@@ -228,11 +237,21 @@ module.exports = {
                         return;
                     }
 
-                    if (token.value !== "(" && token.value !== ")") {
+                    var opener = false;
+                    if (token.value === "(" || token.value === "{" || token.value === "[" ) {
+                        opener = true;
+                    }
+
+                    var closer = false
+                    if (!opener && (token.dalue === ")" || token.value === "}" || token.value === "]" )) {
+                        closer = true
+                    }
+
+                    if (!opener && !closer) {
                         return;
                     }
 
-                    if (token.value === "(" && shouldOpenerHaveSpace(token, nextToken)) {
+                    if (opener && shouldOpenerHaveSpace(token, prevToken, nextToken)) {
                         context.report({
                             node,
                             loc: token.loc.start,
@@ -241,7 +260,7 @@ module.exports = {
                                 return fixer.insertTextAfter(token, " ");
                             }
                         });
-                    } else if (token.value === "(" && shouldOpenerRejectSpace(token, nextToken)) {
+                    } else if (opener && shouldOpenerRejectSpace(token, nextToken)) {
                         context.report({
                             node,
                             loc: token.loc.start,
@@ -250,7 +269,7 @@ module.exports = {
                                 return fixer.removeRange([token.range[1], nextToken.range[0]]);
                             }
                         });
-                    } else if (token.value === ")" && shouldCloserHaveSpace(prevToken, token)) {
+                    } else if (closer && shouldCloserHaveSpace(prevToken, token)) {
 
                         // context.report(node, token.loc.start, MISSING_SPACE_MESSAGE);
                         context.report({
@@ -261,7 +280,7 @@ module.exports = {
                                 return fixer.insertTextBefore(token, " ");
                             }
                         });
-                    } else if (token.value === ")" && shouldCloserRejectSpace(prevToken, token)) {
+                    } else if (closer && shouldCloserRejectSpace(prevToken, token)) {
                         context.report({
                             node,
                             loc: token.loc.start,
