@@ -1,6 +1,6 @@
 /**
  * @fileoverview Disallows or enforces spaces inside of parentheses.
- * @author Jonathan Rajavuori
+ * @author Enzuo based on the work of Jonathan Rajavuori
  */
 "use strict";
 
@@ -65,20 +65,20 @@ module.exports = {
             const openers = [],
                 closers = [];
 
-            if (options.braceException) {
-                openers.push("{");
-                closers.push("}");
-            }
 
-            if (options.bracketException) {
-                openers.push("[");
-                closers.push("]");
-            }
+            openers.push("{");
+            closers.push("}");
 
-            if (options.parenException) {
-                openers.push("(");
-                closers.push(")");
-            }
+
+
+            openers.push("[");
+            closers.push("]");
+
+
+
+            openers.push("(");
+            closers.push(")");
+
 
             if (options.empty) {
                 openers.push(")");
@@ -127,11 +127,10 @@ module.exports = {
          * @param {Object} right The token after it
          * @returns {boolean} True if the paren should have a space
          */
-        function shouldOpenerHaveSpace(token, left, right) {
-            if (sourceCode.isSpaceBetweenTokens(token, right)) {
-                return false;
+        function shouldOpenerHaveRightSpace(token, left, right) {
+            if (!isTokenOnSameLine(token, right)) {
+                return null;
             }
-
             if (sourceCode.isSpaceBetweenTokens(left, token)) {
                 return false;
             }
@@ -152,16 +151,15 @@ module.exports = {
          * @param {Object} right The paren token
          * @returns {boolean} True if the paren should have a space
          */
-        function shouldCloserHaveSpace(left, right) {
+        function shouldCloserHaveLeftSpace(token, left, openerHasSpace) {
+            if (!isTokenOnSameLine(left, token)) {
+                return null;
+            }
             if (left.type === "Punctuator" && left.value === "(") {
                 return false;
             }
 
-            if (sourceCode.isSpaceBetweenTokens(left, right)) {
-                return false;
-            }
-
-            if (ALWAYS) {
+            if (openerHasSpace) {
                 return !isCloserException(left);
             } else {
                 return isCloserException(left);
@@ -225,9 +223,10 @@ module.exports = {
         //--------------------------------------------------------------------------
 
         return {
-            Program: function checkParenSpaces(node) {
+            Program: function checkSpaces(node) {
                 exceptions = getExceptions();
                 const tokens = sourceCode.tokensAndComments;
+                var lastOpenerSpaceRight = false;
 
                 tokens.forEach(function(token, i) {
                     const prevToken = tokens[i - 1];
@@ -237,13 +236,13 @@ module.exports = {
                         return;
                     }
 
-                    var opener = false;
+                    var opener = false
                     if (token.value === "(" || token.value === "{" || token.value === "[" ) {
-                        opener = true;
+                        opener = true
                     }
 
                     var closer = false
-                    if (!opener && (token.dalue === ")" || token.value === "}" || token.value === "]" )) {
+                    if (!opener && (token.value === ")" || token.value === "}" || token.value === "]" )) {
                         closer = true
                     }
 
@@ -251,45 +250,56 @@ module.exports = {
                         return;
                     }
 
-                    if (opener && shouldOpenerHaveSpace(token, prevToken, nextToken)) {
-                        context.report({
-                            node,
-                            loc: token.loc.start,
-                            message: MISSING_SPACE_MESSAGE,
-                            fix(fixer) {
-                                return fixer.insertTextAfter(token, " ");
-                            }
-                        });
-                    } else if (opener && shouldOpenerRejectSpace(token, nextToken)) {
-                        context.report({
-                            node,
-                            loc: token.loc.start,
-                            message: REJECTED_SPACE_MESSAGE,
-                            fix(fixer) {
-                                return fixer.removeRange([token.range[1], nextToken.range[0]]);
-                            }
-                        });
-                    } else if (closer && shouldCloserHaveSpace(prevToken, token)) {
-
-                        // context.report(node, token.loc.start, MISSING_SPACE_MESSAGE);
-                        context.report({
-                            node,
-                            loc: token.loc.start,
-                            message: MISSING_SPACE_MESSAGE,
-                            fix(fixer) {
-                                return fixer.insertTextBefore(token, " ");
-                            }
-                        });
-                    } else if (closer && shouldCloserRejectSpace(prevToken, token)) {
-                        context.report({
-                            node,
-                            loc: token.loc.start,
-                            message: REJECTED_SPACE_MESSAGE,
-                            fix(fixer) {
-                                return fixer.removeRange([prevToken.range[1], token.range[0]]);
-                            }
-                        });
+                    if(opener){
+                        var hasSpaceRight = lastOpenerSpaceRight = sourceCode.isSpaceBetweenTokens(token, nextToken)
+                        if(!hasSpaceRight && shouldOpenerHaveRightSpace(token, prevToken, nextToken) === true ){
+                            lastOpenerSpaceRight = true;
+                            context.report({
+                                node,
+                                loc: token.loc.start,
+                                message: MISSING_SPACE_MESSAGE,
+                                fix(fixer) {
+                                    return fixer.insertTextAfter(token, " ");
+                                }
+                            });
+                        }
+                        if(hasSpaceRight && shouldOpenerHaveRightSpace(token, prevToken, nextToken) === false ){
+                            lastOpenerSpaceRight = false;
+                            context.report({
+                                node,
+                                loc: token.loc.start,
+                                message: REJECTED_SPACE_MESSAGE,
+                                fix(fixer) {
+                                    return fixer.removeRange([token.range[1], nextToken.range[0]]);
+                                }
+                            });
+                        }
                     }
+
+                    if(closer){
+                        var hasSpaceLeft = sourceCode.isSpaceBetweenTokens(prevToken, token)
+                        if(!hasSpaceLeft && shouldCloserHaveLeftSpace(token, prevToken, lastOpenerSpaceRight) === true){
+                            context.report({
+                                node,
+                                loc: token.loc.start,
+                                message: MISSING_SPACE_MESSAGE,
+                                fix(fixer) {
+                                    return fixer.insertTextBefore(token, " ");
+                                }
+                            });    
+                        }
+                        if(hasSpaceLeft && shouldCloserHaveLeftSpace(token, prevToken, lastOpenerSpaceRight) === false){
+                            context.report({
+                                node,
+                                loc: token.loc.start,
+                                message: REJECTED_SPACE_MESSAGE,
+                                fix(fixer) {
+                                    return fixer.removeRange([prevToken.range[1], token.range[0]]);
+                                }
+                            });  
+                        }
+                    }
+                    
                 });
             }
         };

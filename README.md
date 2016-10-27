@@ -1,6 +1,7 @@
 #What
 This rule can be used instead of eslint's `space-in-parens`, `space-in-brackets` and `array-bracket-spacing`
 It makes sure the code has at least one space around `(` `{` and `[`
+Works in symbiosys with the rules `space-before-function-paren`, `func-call-spacing`
 
 `func(a)` will fix to `func( a )`
 `func (a)` is valid
