@@ -17,6 +17,8 @@ ruleTester.run("eslint-plugin-aero", rule, {
 		{ code: "foo\n(\nbar\n)\n", options: ["always"] },
 		{ code: "foo( bar )", options: ["always"] },
 		{ code: "foo (bar)", options: ["always"] },
+		{ code: "myfunc( function (bar) {var foo = bar})", options: ["always"] },
+		{ code: "myfunc( function (bar){ var foo = bar })", options: ["always"] },
     ],
 
     invalid: [
@@ -64,25 +66,25 @@ ruleTester.run("eslint-plugin-aero", rule, {
                 {message: MISSING_SPACE_ERROR, line: 1, column:8}
             ]  
         },
-        /* exceptions ( */
-        {
-            code: "foo({x:bar})",
-            output: "foo({ x:bar })", 
-            options: ["always"],
-            errors: [
-                {message: MISSING_SPACE_ERROR, line: 1, column:5},
-                {message: MISSING_SPACE_ERROR, line: 1, column:11}
-            ]  
-        },
-        {
-            code: "foo ({x:bar}) ",
-            output: "foo ({ x:bar }) ", 
-            options: ["always"],
-            errors: [
-                {message: MISSING_SPACE_ERROR, line: 1, column:6},
-                {message: MISSING_SPACE_ERROR, line: 1, column:12}
-            ]  
-        },
+        // exceptions ( 
+        // {
+        //     code: "foo({x:bar})",
+        //     output: "foo({ x:bar })", 
+        //     options: ["always"],
+        //     errors: [
+        //         {message: MISSING_SPACE_ERROR, line: 1, column:5},
+        //         {message: MISSING_SPACE_ERROR, line: 1, column:11}
+        //     ]  
+        // },
+        // {
+        //     code: "foo ({x:bar}) ",
+        //     output: "foo ({ x:bar }) ", 
+        //     options: ["always"],
+        //     errors: [
+        //         {message: MISSING_SPACE_ERROR, line: 1, column:6},
+        //         {message: MISSING_SPACE_ERROR, line: 1, column:12}
+        //     ]  
+        // },
         // TODO
         // {
         //     code: "foo ({ x:bar }) ",
@@ -93,7 +95,7 @@ ruleTester.run("eslint-plugin-aero", rule, {
         //         {message: MISSING_SPACE_ERROR, line: 1, column:12}
         //     ]  
         // },
-        /*empty*/
+        // empty 
         {
             code: "foo( )",
             output: "foo()", 
@@ -103,7 +105,26 @@ ruleTester.run("eslint-plugin-aero", rule, {
                 {message: REJECTED_SPACE_ERROR, line: 1, column:6},
             ]  
         },
-        /*e
+        // chain
+        {
+            code: "myfunc( function (bar){var foo = bar} )",
+            output: "myfunc( function (bar){ var foo = bar })",
+            options: ["always"],
+            errors: [
+                {message: MISSING_SPACE_ERROR, line: 1, column:23},
+                {message: MISSING_SPACE_ERROR, line: 1, column:37},
+                {message: REJECTED_SPACE_ERROR, line: 1, column:39},
+            ]  
+        },
+        {
+            code: "myfunc( function (bar) {var foo = bar} )",
+            output: "myfunc( function (bar) {var foo = bar})",
+            options: ["always"],
+            errors: [
+                {message: REJECTED_SPACE_ERROR, line: 1, column:40},
+            ]
+        },
+
 
     //     {
     //         code: "var foo={x:bar}",

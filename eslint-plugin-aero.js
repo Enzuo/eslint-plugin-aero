@@ -159,10 +159,10 @@ module.exports = {
                 return false;
             }
 
-            if (openerHasSpace) {
-                return !isCloserException(left);
+            if (openerHasSpace && !isCloserException(left)) {
+                return true;
             } else {
-                return isCloserException(left);
+                return false;
             }
         }
 
