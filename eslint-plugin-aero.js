@@ -158,7 +158,7 @@ module.exports = {
                 } 
                 return true
             } else {
-                return isPunctator(right);
+                return false;
             }
         }
 

@@ -24,6 +24,8 @@ ruleTester.run("eslint-plugin-aero", rule, {
 		{ code: "then( (x+1) )", options: ["always", { loose : [ '()' ]}]},
 		{ code: "a = { x : foo }", options: ["always", { inside : [ '{}' ]}]},
 		{ code: "function bar () {}", options: ["always", { inside : [ '{}' ]}]},
+        /* never */
+        { code: "foo(/* bar */)", options: ["never"] },
     ],
 
     invalid: [
@@ -72,24 +74,24 @@ ruleTester.run("eslint-plugin-aero", rule, {
             ]  
         },
         // exceptions ( 
-        // {
-        //     code: "foo({x:bar})",
-        //     output: "foo({ x:bar })", 
-        //     options: ["always"],
-        //     errors: [
-        //         {message: MISSING_SPACE_ERROR, line: 1, column:5},
-        //         {message: MISSING_SPACE_ERROR, line: 1, column:11}
-        //     ]  
-        // },
-        // {
-        //     code: "foo ({x:bar}) ",
-        //     output: "foo ({ x:bar }) ", 
-        //     options: ["always"],
-        //     errors: [
-        //         {message: MISSING_SPACE_ERROR, line: 1, column:6},
-        //         {message: MISSING_SPACE_ERROR, line: 1, column:12}
-        //     ]  
-        // },
+        {
+            code: "foo({x:bar})",
+            output: "foo({ x:bar })", 
+            options: ["always"],
+            errors: [
+                {message: MISSING_SPACE_ERROR, line: 1, column:5},
+                {message: MISSING_SPACE_ERROR, line: 1, column:11}
+            ]  
+        },
+        {
+            code: "foo ({x:bar}) ",
+            output: "foo ({ x:bar }) ", 
+            options: ["always"],
+            errors: [
+                {message: MISSING_SPACE_ERROR, line: 1, column:6},
+                {message: MISSING_SPACE_ERROR, line: 1, column:12}
+            ]  
+        },
         // TODO
         // {
         //     code: "foo ({ x:bar }) ",
@@ -108,6 +110,15 @@ ruleTester.run("eslint-plugin-aero", rule, {
             errors: [
                 {message: REJECTED_SPACE_ERROR, line: 1, column:4},
                 {message: REJECTED_SPACE_ERROR, line: 1, column:6},
+            ]  
+        },
+        {
+            code: "function foo () { }",
+            output: "function foo () {}", 
+            options: ["always", {"inside" : ["{}"]}],
+            errors: [
+                {message: REJECTED_SPACE_ERROR, line: 1, column:17},
+                {message: REJECTED_SPACE_ERROR, line: 1, column:19},
             ]  
         },
         // chain
@@ -143,6 +154,9 @@ ruleTester.run("eslint-plugin-aero", rule, {
             ]
         },         
 
+        /***********************************************
+         * NEVER (space in or outside the bracket)
+         ***********************************************/ 
 
     //     {
     //         code: "var foo={x:bar}",
@@ -154,11 +168,42 @@ ruleTester.run("eslint-plugin-aero", rule, {
     //         ]
     //     },
     //     /* NEVER (no spaces inside parens, braces, bracket) */
-    //     {
-    //         code: "foo( )",
-    //         output: "foo()",
-    //         options: ["never"],
-    //         errors: [{message: REJECTED_SPACE_ERROR, line: 1, column: 4}]
-    //     },
+        {
+            code: "foo( )",
+            output: "foo()",
+            options: ["never"],
+            errors: [
+                {message: REJECTED_SPACE_ERROR, line: 1, column: 4},
+                {message: REJECTED_SPACE_ERROR, line: 1, column: 6}
+            ]
+        },
+        {
+            code: "foo( x )",
+            output: "foo(x)",
+            options: ["never"],
+            errors: [
+                {message: REJECTED_SPACE_ERROR, line: 1, column: 4},
+                {message: REJECTED_SPACE_ERROR, line: 1, column: 8}
+            ]
+        },
+        {
+            code: "function foo() { }",
+            output: "function foo() {}",
+            options: ["never"],
+            errors: [
+                {message: REJECTED_SPACE_ERROR, line: 1, column: 16},
+                {message: REJECTED_SPACE_ERROR, line: 1, column: 18}
+            ]
+        },
+        //inside option has no influence
+        {
+            code: "function foo() { }",
+            output: "function foo() {}",
+            options: ["never", {"inside" : ['{}']}],
+            errors: [
+                {message: REJECTED_SPACE_ERROR, line: 1, column: 16},
+                {message: REJECTED_SPACE_ERROR, line: 1, column: 18}
+            ]
+        },
     ]
 });
