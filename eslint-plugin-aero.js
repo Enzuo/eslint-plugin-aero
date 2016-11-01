@@ -11,7 +11,7 @@
 module.exports = {
     meta: {
         docs: {
-            description: "enforce consistent spacing inside parentheses",
+            description: "enforce consistent spacing inside parens, brace, bracket",
             category: "Stylistic Issues",
             recommended: false
         },
@@ -25,13 +25,20 @@ module.exports = {
             {
                 type: "object",
                 properties: {
-                    exceptions: {
+                    inside: {
                         type: "array",
                         items: {
                             enum: ["{}", "[]", "()", "empty"]
                         },
                         uniqueItems: true
-                    }
+                    },
+                    loose: {
+                        type: "array",
+                        items: {
+                            enum: ["{}", "[]", "()"]
+                        },
+                        uniqueItems: true
+                    },
                 },
                 additionalProperties: false
             }
@@ -40,20 +47,13 @@ module.exports = {
 
     create(context) {
 
-        const MISSING_SPACE_MESSAGE = "There must be a space inside this paren.",
-            REJECTED_SPACE_MESSAGE = "There should be no spaces inside this paren.",
-            ALWAYS = context.options[0] === "always",
-
-            exceptionsArrayOptions = (context.options.length === 2) ? context.options[1].exceptions : [],
-            options = {};
-        let exceptions;
-
-        if (exceptionsArrayOptions.length) {
-            options.braceException = exceptionsArrayOptions.indexOf("{}") !== -1;
-            options.bracketException = exceptionsArrayOptions.indexOf("[]") !== -1;
-            options.parenException = exceptionsArrayOptions.indexOf("()") !== -1;
-            options.empty = exceptionsArrayOptions.indexOf("empty") !== -1;
-        }
+        const MISSING_SPACE_MESSAGE = "There must be a space inside this paren."
+        const REJECTED_SPACE_MESSAGE = "There should be no spaces inside this paren."
+        const ALWAYS = context.options[0] === "always"
+        const looseArray = (context.options.length === 2) && context.options[1].loose ? context.options[1].loose : []
+        const insideArray = (context.options.length === 2) && context.options[1].inside ? context.options[1].inside : []
+        const options = {}
+        let punctuators
 
         /**
          * Produces an object with the opener and closer exception values
@@ -61,34 +61,36 @@ module.exports = {
          * @returns {Object} `openers` and `closers` exception values
          * @private
          */
-        function getExceptions() {
-            const openers = [],
-                closers = [];
-
-
-            openers.push("{");
-            closers.push("}");
-
-
-
-            openers.push("[");
-            closers.push("]");
-
-
-
-            openers.push("(");
-            closers.push(")");
-
-
-            if (options.empty) {
-                openers.push(")");
-                closers.push("(");
+        function getPunctuators() {
+            const openers = ["(", "{", "["]
+            const closers = [")", "}", "]"]
+            const loose = [] 
+            const inside = []
+            
+            for(let string of looseArray){
+                for(let char of string){
+                    loose.push(char)
+                }
             }
+
+            insideArray.map( (couple) => {
+                if (couple === '()') {
+                    return inside.push('(')
+                }
+                if (couple === '{}') {
+                    return inside.push('{')
+                }
+                if (couple === '[]') {
+                    return inside.push('[')
+                }
+            })
 
             return {
                 openers,
-                closers
-            };
+                closers,
+                loose,
+                inside,
+            }
         }
 
         //--------------------------------------------------------------------------
@@ -109,7 +111,15 @@ module.exports = {
          * @returns {boolean} True if the token is one of the exceptions for the opener paren
          */
         function isOpenerException(token) {
-            return token.type === "Punctuator" && exceptions.openers.indexOf(token.value) >= 0;
+            return token.type === "Punctuator" && punctuators.openers.indexOf(token.value) >= 0;
+        }
+
+        function isloose(token) {
+            return token.type === "Punctuator" && punctuators.loose.indexOf(token.value) >= 0;
+        }
+
+        function isInside(token) {
+            return token.type === "Punctuator" && punctuators.inside.indexOf(token.value) >= 0;
         }
 
         /**
@@ -118,7 +128,7 @@ module.exports = {
          * @returns {boolean} True if the token is one of the exceptions for the closer paren
          */
         function isCloserException(token) {
-            return token.type === "Punctuator" && exceptions.closers.indexOf(token.value) >= 0;
+            return token.type === "Punctuator" && punctuators.closers.indexOf(token.value) >= 0;
         }
 
         /**
@@ -131,7 +141,7 @@ module.exports = {
             if (!isTokenOnSameLine(token, right)) {
                 return null;
             }
-            if (sourceCode.isSpaceBetweenTokens(left, token)) {
+            if (sourceCode.isSpaceBetweenTokens(left, token) && !isInside(token)) {
                 return false;
             }
 
@@ -139,7 +149,10 @@ module.exports = {
                 if (right.type === "Punctuator" && right.value === ")") {
                     return false;
                 }
-                return !isOpenerException(right);
+                if (isOpenerException(right) === true) {
+                    return isloose(right) ? null : false 
+                } 
+                return true
             } else {
                 return isOpenerException(right);
             }
@@ -162,59 +175,7 @@ module.exports = {
             if (openerHasSpace && !isCloserException(left)) {
                 return true;
             } else {
-                return false;
-            }
-        }
-
-        /**
-         * Determines if an opener paren should not have an existing space after it
-         * @param {Object} left The paren token
-         * @param {Object} right The token after it
-         * @returns {boolean} True if the paren should reject the space
-         */
-        function shouldOpenerRejectSpace(left, right) {
-            if (right.type === "Line") {
-                return false;
-            }
-
-            if (!isTokenOnSameLine(left, right)) {
-                return false;
-            }
-
-            if (!sourceCode.isSpaceBetweenTokens(left, right)) {
-                return false;
-            }
-
-            if (ALWAYS) {
-                return isOpenerException(right);
-            } else {
-                return !isOpenerException(right);
-            }
-        }
-
-        /**
-         * Determines if an closer paren should not have an existing space after it
-         * @param {Object} left The token before the paren
-         * @param {Object} right The paren token
-         * @returns {boolean} True if the paren should reject the space
-         */
-        function shouldCloserRejectSpace(left, right) {
-            if (left.type === "Punctuator" && left.value === "(") {
-                return false;
-            }
-
-            if (!isTokenOnSameLine(left, right)) {
-                return false;
-            }
-
-            if (!sourceCode.isSpaceBetweenTokens(left, right)) {
-                return false;
-            }
-
-            if (ALWAYS) {
-                return isCloserException(left);
-            } else {
-                return !isCloserException(left);
+                return isloose(left) ? null : false;
             }
         }
 
@@ -224,7 +185,7 @@ module.exports = {
 
         return {
             Program: function checkSpaces(node) {
-                exceptions = getExceptions();
+                punctuators = getPunctuators();
                 const tokens = sourceCode.tokensAndComments;
                 var lastOpenerSpaceRight = false;
 

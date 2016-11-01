@@ -19,6 +19,10 @@ ruleTester.run("eslint-plugin-aero", rule, {
 		{ code: "foo (bar)", options: ["always"] },
 		{ code: "myfunc( function (bar) {var foo = bar})", options: ["always"] },
 		{ code: "myfunc( function (bar){ var foo = bar })", options: ["always"] },
+		{ code: "then(( foo ) => {\nbar=foo\n})", options: ["always"], parserOptions: { ecmaVersion: 6 }},
+		{ code: "then( (foo) => {\nbar=foo\n})", options: ["always", { loose : [ '()' ]}], parserOptions: { ecmaVersion: 6 }},
+		{ code: "then( (x+1) )", options: ["always", { loose : [ '()' ]}]},
+		{ code: "a = { x : foo }", options: ["always", { inside : [ '{}' ]}]},
     ],
 
     invalid: [
@@ -124,6 +128,19 @@ ruleTester.run("eslint-plugin-aero", rule, {
                 {message: REJECTED_SPACE_ERROR, line: 1, column:40},
             ]
         },
+        /***********************************************
+         * Options 
+         ***********************************************/
+        //options : inside, force space to be inside the parens, brace or bracket 
+        {
+            code: "var a = {x:1}",
+            output: "var a = { x:1 }",
+            options: ["always", {inside : ["{}"]}],
+            errors: [
+                {message: MISSING_SPACE_ERROR, line: 1, column:9},
+                {message: MISSING_SPACE_ERROR, line: 1, column:13},
+            ]
+        },         
 
 
     //     {
