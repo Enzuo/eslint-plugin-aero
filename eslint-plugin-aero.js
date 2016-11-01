@@ -192,22 +192,23 @@ module.exports = {
                 punctuators = getPunctuators();
                 const tokens = sourceCode.tokensAndComments;
                 var lastOpenerSpaceRight = false;
+                let openerDepthSpaceRight = {}
+                let currentDepth = 0
 
                 tokens.forEach(function(token, i) {
                     const prevToken = tokens[i - 1];
                     const nextToken = tokens[i + 1];
+                    let opener = false
+                    let closer = false
 
                     if (token.type !== "Punctuator") {
                         return;
                     }
 
-                    var opener = false
                     if (token.value === "(" || token.value === "{" || token.value === "[" ) {
                         opener = true
                     }
-
-                    var closer = false
-                    if (!opener && (token.value === ")" || token.value === "}" || token.value === "]" )) {
+                    else if (!opener && (token.value === ")" || token.value === "}" || token.value === "]" )) {
                         closer = true
                     }
 
@@ -216,9 +217,10 @@ module.exports = {
                     }
 
                     if(opener){
-                        var hasSpaceRight = lastOpenerSpaceRight = sourceCode.isSpaceBetweenTokens(token, nextToken)
+                        currentDepth++;
+                        var hasSpaceRight = openerDepthSpaceRight[currentDepth] = sourceCode.isSpaceBetweenTokens(token, nextToken)
                         if(!hasSpaceRight && shouldOpenerHaveRightSpace(token, prevToken, nextToken) === true ){
-                            lastOpenerSpaceRight = true;
+                            openerDepthSpaceRight[currentDepth] = true;
                             context.report({
                                 node,
                                 loc: token.loc.start,
@@ -229,7 +231,7 @@ module.exports = {
                             });
                         }
                         if(hasSpaceRight && shouldOpenerHaveRightSpace(token, prevToken, nextToken) === false ){
-                            lastOpenerSpaceRight = false;
+                            openerDepthSpaceRight[currentDepth] = false;
                             context.report({
                                 node,
                                 loc: token.loc.start,
@@ -243,7 +245,7 @@ module.exports = {
 
                     if(closer){
                         var hasSpaceLeft = sourceCode.isSpaceBetweenTokens(prevToken, token)
-                        if(!hasSpaceLeft && shouldCloserHaveLeftSpace(token, prevToken, lastOpenerSpaceRight) === true){
+                        if(!hasSpaceLeft && shouldCloserHaveLeftSpace(token, prevToken, openerDepthSpaceRight[currentDepth]) === true){
                             context.report({
                                 node,
                                 loc: token.loc.start,
@@ -253,7 +255,7 @@ module.exports = {
                                 }
                             });    
                         }
-                        if(hasSpaceLeft && shouldCloserHaveLeftSpace(token, prevToken, lastOpenerSpaceRight) === false){
+                        if(hasSpaceLeft && shouldCloserHaveLeftSpace(token, prevToken, openerDepthSpaceRight[currentDepth]) === false){
                             context.report({
                                 node,
                                 loc: token.loc.start,
@@ -263,6 +265,10 @@ module.exports = {
                                 }
                             });  
                         }
+                    }
+
+                    if (closer){
+                        currentDepth--;
                     }
                     
                 });

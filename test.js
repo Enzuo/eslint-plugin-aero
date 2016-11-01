@@ -24,6 +24,8 @@ ruleTester.run("eslint-plugin-aero", rule, {
 		{ code: "then( (x+1) )", options: ["always", { loose : [ '()' ]}]},
 		{ code: "a = { x : foo }", options: ["always", { inside : [ '{}' ]}]},
 		{ code: "function bar () {}", options: ["always", { inside : [ '{}' ]}]},
+		{ code: "if (foo( a ) === bar) {}", options: ["always"]},
+		{ code: "if( foo( a ) === bar ){}", options: ["always"]},
         /* never */
         { code: "foo(/* bar */)", options: ["never"] },
     ],
@@ -138,6 +140,14 @@ ruleTester.run("eslint-plugin-aero", rule, {
             options: ["always"],
             errors: [
                 {message: REJECTED_SPACE_ERROR, line: 1, column:40},
+            ]
+        },
+        {
+            code: "if( foo (a) === bar){}",
+            output: "if( foo (a) === bar ){}",
+            options: ["always"],
+            errors: [
+                {message: MISSING_SPACE_ERROR, line: 1, column:20},
             ]
         },
         /***********************************************
