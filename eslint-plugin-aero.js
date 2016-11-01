@@ -114,6 +114,10 @@ module.exports = {
             return token.type === "Punctuator" && punctuators.openers.indexOf(token.value) >= 0;
         }
 
+        function isPunctator(token) {
+            return token.type === "Punctuator" && (punctuators.openers.indexOf(token.value) >= 0 || punctuators.closers.indexOf(token.value) >= 0 );
+        }
+
         function isloose(token) {
             return token.type === "Punctuator" && punctuators.loose.indexOf(token.value) >= 0;
         }
@@ -149,12 +153,12 @@ module.exports = {
                 if (right.type === "Punctuator" && right.value === ")") {
                     return false;
                 }
-                if (isOpenerException(right) === true) {
+                if (isPunctator(right) === true) {
                     return isloose(right) ? null : false 
                 } 
                 return true
             } else {
-                return isOpenerException(right);
+                return isPunctator(right);
             }
         }
 

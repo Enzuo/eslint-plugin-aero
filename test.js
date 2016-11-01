@@ -23,6 +23,7 @@ ruleTester.run("eslint-plugin-aero", rule, {
 		{ code: "then( (foo) => {\nbar=foo\n})", options: ["always", { loose : [ '()' ]}], parserOptions: { ecmaVersion: 6 }},
 		{ code: "then( (x+1) )", options: ["always", { loose : [ '()' ]}]},
 		{ code: "a = { x : foo }", options: ["always", { inside : [ '{}' ]}]},
+		{ code: "function bar () {}", options: ["always", { inside : [ '{}' ]}]},
     ],
 
     invalid: [
