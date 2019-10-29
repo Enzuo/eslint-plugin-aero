@@ -14,7 +14,7 @@
   "author": "Enzuo",
   "license": "MIT",
   "devDependencies": {
-    "eslint": "^3.8.1"
+    "eslint": "^6.6.0"
   },
   "peerDependencies": {
     "eslint": ">=0.8.0"
